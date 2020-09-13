@@ -1,0 +1,57 @@
+#!/bin/python3
+
+import json, argparse, os, sys, subprocess
+
+argparser = argparse.ArgumentParser(description='Creates and installs new systemd services')
+argparser.add_argument('--command', dest='COMMAND', type=str, required=True, help='The command the service should run')
+argparser.add_argument('--name', dest='NAME', type=str, required=True, help='Name of the service')
+argparser.add_argument('--desc', dest='DESC', type=str, default='', help='Description of the service')
+argparser.add_argument('--no-reload', dest='NO_RELOAD', action='store_true', help='Don\'t reload systemd after the service has been installed')
+argparser.add_argument('--no-enable', dest='NO_ENABLE', action='store_true', help='Dont enable the unit after creation')
+argparser.add_argument('--after', dest='AFTER', type=str, default='network.target', help='The target that needs to be run before this can be run')
+argparser.add_argument('--mounts', dest='MOUNTS', type=str, default='/', help='Paths that must be mounted before this target can be run')
+argparser.add_argument('--mem-limit', dest='MEM_LIMIT', type=int, default=0, help='Memory limit of the process (in megabytes)')
+argparser.add_argument('--timeout', dest='TIMEOUT', type=int, default=1000, help='Startup timeout of the service')
+argparser.add_argument('--kill-signal', dest='KILL_SIGNAL', type=str, default='SIGTERM', choices=['SIGINT', 'SIGHUP', 'SIGTERM', 'SIGKILL'], help='Signal to kill the process with')
+argparser.add_argument('--user', dest='USER', type=str, required=True, help='User to run the process as')
+argparser.add_argument('--group', dest='GROUP', type=str, required=True, help='Group to run the process as')
+argparser.add_argument('--workdir', dest='WORKDIR', type=str, default='', help='Working directory of the application')
+argparser.add_argument('--pidfile', dest='PIDFILE', type=str, help='File to put the PID of the process into')
+argparser.add_argument('--type', dest='TYPE', type=str, default='forking', choices=['simple', 'exec', 'forking', 'oneshot', 'dbus', 'notify', 'idle'], help='Type of process we are launching')
+argparser.add_argument('--environment', dest='ENV', type=str, default='', help='The environment of the process')
+argparser.add_argument('--stop-command', dest='EXEC_STOP', type=str, default='', help='Command to exec on stop')
+args = argparser.parse_args()
+
+if os.getuid() != 0:
+	print("Script must be run as root.")
+	exit(1)
+
+with open('/etc/systemd/system/{0}.service'.format(args.NAME), 'w') as fp:
+	fp.write("[Unit]\nDescription={0}\nAfter={1}\nRequiresMountsFor={2}\n\n".format(args.DESC, args.AFTER, args.MOUNTS))
+	fp.write("[Service]\nType={0}\nUser={1}\nGroup={2}\n\n".format(args.TYPE, args.USER, args.GROUP))
+	fp.write("WorkingDirectory={0}\nEnvironment={1}\nExecStart={2}\n\n".format(args.WORKDIR, args.ENV, args.COMMAND))
+	if args.PIDFILE:
+		fp.write("PIDFile={0}\n\n".format(args.PIDFILE))
+	fp.write("KillSignal={0}\nTimeoutStartSec={1}\n\n".format(args.KILL_SIGNAL, args.TIMEOUT))
+	if args.EXEC_STOP != '':
+		fp.write("ExecStop={0}\n\n".format(args.EXEC_STOP))
+	if args.MEM_LIMIT > 0:
+		fp.write("MemoryLimit={0}M\n\n".format(args.MEM_LIMIT))
+
+	fp.write("[Install]\n\nWantedBy=default.target")
+
+if not args.NO_ENABLE:
+	res = subprocess.run(['systemctl', '{0}.service'.format(args.NAME)])
+	if res.returncode != 0:
+		print("Unit failed to enable.\n\n")
+		print(res.stdout)
+		print(res.stderr)
+		exit(1)
+
+if not args.NO_RELOAD:
+	res = subprocess.run(['systemctl', 'daemon-reload'])
+	if res.returncode != 0:
+		print("Systemd failed to reload.\n\n")
+		print(res.stdout)
+		print(res.stderr)
+		exit(1)
