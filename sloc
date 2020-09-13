@@ -1,0 +1,13 @@
+#!/bin/sh
+
+function usage() 
+{
+        echo "USAGE: sloc <directory>"
+        exit 1
+}
+
+if [ ! -d "$1" ]; then
+	usage
+fi
+
+(find $1 -type f \( -iname "*.c" -o -iname "*.cpp" -o -iname "*.h" -o -iname "*.hpp" -o -iname "*.cc" -o -iname "*.cxx" -o -iname "*.hxx" \) -print | xargs cat ) | wc -l
