@@ -1,0 +1,23 @@
+#!/usr/bin/python3
+import argparse, sys, os, subprocess
+
+argparser = argparse.ArgumentParser(description='Downloads an app with steamcmd')
+argparser.add_argument('--username', type=str, dest='USER', default='anonymous', help='User to login with')
+argparser.add_argument('--password', type=str, dest='PASSWORD', default='', help='Password for the user')
+argparser.add_argument('--install-dir', type=str, dest='DIR', required=True, help='Install directory')
+argparser.add_argument('--appid', type=str, dest='APPID', required=True, help='AppId to downlaod')
+argparser.add_argument('--validate', action='store_true', dest='VALIDATE', help='Validate the install after download')
+
+args = argparser.parse_args()
+
+command = "steamcmd +login {0} {1} +force_install_dir {2} +app_update {3}".format(args.USER, args.PASSWORD, args.DIR, args.APPID)
+if args.VALIDATE:
+	command += " validate"
+command += " +quit"
+
+res = subprocess.run(command, shell=True, capture_output=True)
+if res.returncode != 0:
+	print("Failed to install app {0}:\n\n".format(args.APPID))
+	print(res.stdout)
+	print(res.stderr)
+	exit(1)
