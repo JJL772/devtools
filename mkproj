@@ -34,7 +34,8 @@ def main():
         defines = rule["defines"] or []
         flags = rule["flags"] or []
         compiler = rule["compiler"] or "gcc"
-
+        includes = ['-I' + inc for inc in includes]
+        
         # Write out CLANGDB
         if clangdb:
             db = []
