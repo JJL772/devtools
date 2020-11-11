@@ -40,6 +40,7 @@ def main():
         if clangdb:
             db = []
             for file in files:
+                fstr = os.path.abspath(args.i + "/" + file)
                 f = {}
                 f['directory'] = os.path.abspath(args.i + "/" + os.path.dirname(str(file)))
                 f['file'] = file
@@ -47,7 +48,7 @@ def main():
                 f['arguments']+=(includes)
                 f['arguments']+=(defines)
                 f['arguments']+=(flags)
-                f['arguments']+=['-o', file+'.o', file]
+                f['arguments']+=['-o', fstr+'.o', fstr]
                 db.append(f)
             with open('{0}/compile_commands.json'.format(args.o), 'w') as fp:
                 json.dump(db, fp)
