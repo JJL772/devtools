@@ -42,11 +42,11 @@ def main():
                 f = {}
                 f['directory'] = os.path.dirname(str(file))
                 f['file'] = file
-                f['args'] = [compiler]
-                f['args']+=(includes)
-                f['args']+=(defines)
-                f['args']+=(flags)
-                f['args']+=['-o', file+'.o', file]
+                f['arguments'] = [compiler]
+                f['arguments']+=(includes)
+                f['arguments']+=(defines)
+                f['arguments']+=(flags)
+                f['arguments']+=['-o', file+'.o', file]
                 db.append(f)
             with open('{0}/compile_commands.json'.format(args.o), 'w') as fp:
                 json.dump(db, fp)
