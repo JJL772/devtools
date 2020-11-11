@@ -1,6 +1,6 @@
 {
     "name": "Project",
-    "type": "cpplib",
+    "type": "cppshlib",
     "generators": [
         "clangdb",
         "cmake",
@@ -11,7 +11,7 @@
         {
             "files": [
                 "someFolder/**.cpp",
-                "fuck.cpp"
+                "linsert.py"
             ],
             "virtual-folder": "poop",
             "includes": [
