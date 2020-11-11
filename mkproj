@@ -43,7 +43,7 @@ def main():
                 fstr = os.path.abspath(args.i + "/" + file)
                 f = {}
                 f['directory'] = os.path.abspath(args.i + "/" + os.path.dirname(str(file)))
-                f['file'] = file
+                f['file'] = fstr
                 f['arguments'] = [compiler]
                 f['arguments']+=(includes)
                 f['arguments']+=(defines)
