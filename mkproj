@@ -1,0 +1,84 @@
+#!/usr/env python3
+
+import json, xml, sys, os, argparse, glob
+
+argparser = argparse.ArgumentParser(description='Generates project files from a simple JSON description')
+argparser.add_argument('-c', action='store_true', help='Generate compile_commands.json')
+argparser.add_argument('-m', action='store_true', help='Generate CMakeLists.txt')
+argparser.add_argument('-l', action='store_true', help='Generate clion projects')
+argparser.add_argument('-o', type='str', default='.', help='Directory to output stuff into')
+argparser.add_argument('-v', action='store_true', help='Generate vscode stuff')
+argparser.add_argument('-i', type='str', default='.', help='Directory where project.json is located')
+args = argparser.parse_args()
+
+def main():
+    # Read the json
+    project = dict()
+    with open('{0}/project.json'.format(args.i), "r") as fp:
+        project = json.load(fp)
+
+    generators = project["generators"] or {}
+    # Determine what generators to use
+    clangdb = args.c or ("clangdb" in generators)
+    cmake = args.m or ("cmake" in generators)
+    vscode = args.v or ("vscode" in generators)
+    clion = args.l or ("clion" in generators)
+    
+    # Loop through the rules
+    for rule in project["rules"]:
+        files = []
+        for file in rule["files"]:
+            files.append(glob.glob(file, recursive=True))
+        vfolder = rule["virtual-folder"] or ''
+        includes = rule["includes"] or []
+        defines = rule["defines"] or []
+        flags = rule["flags"] or []
+        compiler = rule["compiler"] or "gcc"
+
+        # Write out CLANGDB
+        if clangdb:
+            db = []
+            for file in files:
+                f = {}
+                f['directory'] = os.path.dirname(str(file))
+                f['file'] = file
+                f['args'] = [compiler]
+                f['args'].append(includes)
+                f['args'].append(defines)
+                f['args'].append(flags)
+                db.append(f)
+            with open('{0}/compile_commands.json'.format(args.o), 'w') as fp:
+                json.dump(db, fp)
+            
+        # Write out CMAKE
+        if cmake:
+            with open('{0}/CMakeLists.txt'.format(args.o), 'w') as fp:
+                fp.write('project({0} C CXX)\n\n'.format(project["project"]))
+                fp.write('set(SRCS ')
+                for file in files:
+                    fp.write(' \"{0}\" '.format(file))
+                fp.write(')\n\n\n')
+                fp.write('add_definitions(')
+                for define in defines:
+                    fp.write(' {0} '.format(define))
+                fp.write(')\n\n\ninclude_directories( ')
+                for inc in includes:
+                    fp.write(' {0} ')
+                fp.write(')\n\n\n\n')
+                fp.write('set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ')
+                for flag in flags:
+                    fp.write(' {0} '.format(flag))
+                fp.write('")\n\n\n')
+                fp.write('set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CXX_FLAGS}")')
+                if project['type'].endswith('shlib'):
+                    fp.write('add_library({0} SHARED $\{SRCS\})'.format(project['name']))                
+                if project['type'].endswith('stlib'):
+                    fp.write('add_library({0} STATIC $\{SRCS\})'.format(project['name']))                
+                if project['type'].endswith('prog'):
+                    fp.write('add_executable({0} $\{SRCS\})'.format(project['name']))
+
+
+
+
+if __name__ == "__main__": 
+    main()

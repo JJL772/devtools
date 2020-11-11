@@ -1,0 +1,36 @@
+{
+    "name": "Project",
+    "type": "cpplib",
+    "generators": [
+        "clangdb",
+        "cmake",
+        "vscode",
+        "clion"
+    ],
+    "rules": [
+        {
+            "files": [
+                "someFolder/**.cpp",
+                "fuck.cpp"
+            ],
+            "virtual-folder": "poop",
+            "includes": [
+
+            ],
+            "defines": [
+
+            ],
+            "flags": [
+
+            ],
+            "compiler": "gcc"
+        }
+    ],
+    "tasks": [
+        {
+            "name": "Thing",
+            "cwd" : "path",
+            "command": ""
+        }
+    ]
+}
